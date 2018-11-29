@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>EJS Helper</title>
+		<script src="https://cdn.jsdelivr.net/npm/ejs@2.6.1/ejs.min.js"></script>
+		<style>
+			body {
+				margin: 0;
+			}
+
+			.container {
+				display: grid;
+				gap: 1rem;
+									grid-template-rows: 1fr 3rem 1fr;
+				height: 100vh;
+			}
+
+			.cell {
+				background: #eee;
+				position: relative;
+			}
+
+			.result {
+				grid-column-start: 1;
+				grid-column-end: 3;
+			}
+
+			.button {
+				height: 100%;
+				grid-column-start: 1;
+				grid-column-end: 3;
+				border: none;
+				cursor: pointer;
+				color: #354F00;
+				background: #A5C663;
+				font-size: 1rem;
+			}
+
+			.placeholder {
+				position: absolute;
+				bottom: 0;
+				right: 0;
+				font-family: sans-serif;
+				opacity: .2;
+				color: #0D4D4D;
+				font-size: 5rem;
+				font-weight: 100;
+				z-index: 0;
+			}
+
+			.textarea {
+				box-sizing: border-box;
+				width: 100%;
+				height: 100%;
+				color: #013237;
+				border: none;
+				background: transparent;
+				padding: 1rem;
+				font-size: 1rem;
+				position: relative;
+				font-family: monospace;
+			}
+
+			.textarea.error {
+				background: rgba(170, 57, 57, .5);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="cell">
+				<div class="placeholder">EJS template</div>
+				<textarea class="textarea" id="ejs"></textarea>
+			</div>
+			<div class="cell">
+				<div class="placeholder">JSON locale</div>
+				<textarea class="textarea" id="json"></textarea>
+			</div>
+			<button id="convert" class="button">Convert</button>
+			<div class="cell result">
+				<div class="placeholder">Result</div>
+				<textarea class="textarea" id="result"></textarea>
+			</div>
+		</div>
+		<script>
+			const debounce = (func, delay) => {
+				let inDebounce;
+				return function() {
+					const ctx = this;
+					const args = arguments;
+					clearTimeout(inDebounce);
+					inDebounce = setTimeout(() => func.apply(ctx, args), delay);
+				}
+			}
+
+			const jsonField = document.getElementById('json');
+			jsonField.addEventListener('input', debounce(evt => {
+				let validJSON = false;
+				try {
+					JSON.parse(evt.target.value);
+					validJSON = true;
+				} catch (err) {}
+				validJSON ? jsonField.classList.remove('error') : jsonField.classList.add('error');
+			}, 500));
+
+			const getJSONFieldValue = () => {
+				let json = null;
+				try {
+					json = JSON.parse(jsonField.value);
+				} catch (err) {}
+				return json;
+			}
+
+			const ejsField = document.getElementById('ejs');
+
+			const resultField = document.getElementById('result');
+
+			const button = document.getElementById('convert');
+			button.addEventListener('click', evt => {
+				resultField.classList.remove('error');
+				let template = null;
+				try {
+					template = ejs.compile(ejsField.value);
+				} catch (err) {
+					resultField.value = err;
+					resultField.classList.add('error');
+				}
+
+				const json = getJSONFieldValue();
+				resultField.value = template({locale: json || {}});
+			});
+		</script>
+	</body>
+</html>
