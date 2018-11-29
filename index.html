@@ -83,6 +83,37 @@
 			</div>
 		</div>
 		<script>
+			const storageAvailable = type => {
+				try {
+					var storage = window[type],
+						x = '__storage_test__';
+					storage.setItem(x, x);
+					storage.removeItem(x);
+					return true;
+				}
+				catch(e) {
+					return e instanceof DOMException && (
+						// everything except Firefox
+						e.code === 22 ||
+						// Firefox
+						e.code === 1014 ||
+						// test name field too, because code might not be present
+						// everything except Firefox
+						e.name === 'QuotaExceededError' ||
+						// Firefox
+						e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
+						// acknowledge QuotaExceededError only if there's something already stored
+						storage.length !== 0;
+				}
+			}
+
+			const isStorageAvailable = storageAvailable('localStorage');
+
+			const saveString = (key, str) => isStorageAvailable && localStorage.setItem(key, str);
+
+			const EJS_LS_KEY = 'ejsHelper-ejsvalue';
+			const JSON_LS_KEY = 'ejsHelper-jsonvalue';
+
 			const debounce = (func, delay) => {
 				let inDebounce;
 				return function() {
@@ -94,6 +125,11 @@
 			}
 
 			const jsonField = document.getElementById('json');
+			if (isStorageAvailable) {
+				const jsonVal = localStorage.getItem(JSON_LS_KEY) || jsonField.value || '';
+				jsonField.value = jsonVal;
+			}
+
 			jsonField.addEventListener('input', debounce(evt => {
 				let validJSON = false;
 				try {
@@ -101,6 +137,7 @@
 					validJSON = true;
 				} catch (err) {}
 				validJSON ? jsonField.classList.remove('error') : jsonField.classList.add('error');
+				saveString(JSON_LS_KEY, evt.target.value);
 			}, 500));
 
 			const getJSONFieldValue = () => {
@@ -112,6 +149,14 @@
 			}
 
 			const ejsField = document.getElementById('ejs');
+			if (isStorageAvailable) {
+				const ejsVal = localStorage.getItem(EJS_LS_KEY) || ejsField.value || '';
+				ejsField.value = ejsVal;
+			}
+
+			ejsField.addEventListener('input', debounce(evt => {
+				saveString(EJS_LS_KEY, evt.target.value);
+			}, 500));
 
 			const resultField = document.getElementById('result');
 
