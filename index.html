@@ -3,6 +3,7 @@
 	<head>
 		<title>EJS Helper</title>
 		<script src="https://cdn.jsdelivr.net/npm/ejs@2.6.1/ejs.min.js"></script>
+		<script src="https://unpkg.com/intl-messageformat@2.2.0/dist/intl-messageformat-with-locales.js"></script>
 		<style>
 			body {
 				margin: 0;
@@ -158,6 +159,14 @@
 				saveString(EJS_LS_KEY, evt.target.value);
 			}, 500));
 
+			const createLocale = dict => {
+				const result = Object.assign({}, dict);
+				for (const key in result) {
+					result[key] = new IntlMessageFormat(result[key]).format;
+				}
+				return result;
+			}
+
 			const resultField = document.getElementById('result');
 
 			const button = document.getElementById('convert');
@@ -172,7 +181,22 @@
 				}
 
 				const json = getJSONFieldValue();
-				resultField.value = template({locale: json || {}});
+				let locale;
+				try {
+					locale = createLocale(json);
+				} catch (err) {
+					resultField.value = err;
+					resultField.classList.add('error');
+					return;
+				}
+
+				try {
+					resultField.value = template({locale: locale || {}});
+				} catch (err) {
+					resultField.value = err;
+					resultField.classList.add('error');
+					return;
+				}
 			});
 		</script>
 	</body>
